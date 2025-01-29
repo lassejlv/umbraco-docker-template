@@ -1,17 +1,15 @@
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/aspnet:7.0 AS base
 WORKDIR /app
 EXPOSE 80
-EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+FROM --platform=linux/amd64 mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-COPY ["YourUmbracoProject.csproj", "."]
-RUN dotnet restore "YourUmbracoProject.csproj"
 COPY . .
-RUN dotnet build "YourUmbracoProject.csproj" -c Release -o /app/build
+RUN dotnet restore
+RUN dotnet build -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "YourUmbracoProject.csproj" -c Release -o /app/publish
+RUN dotnet publish -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
