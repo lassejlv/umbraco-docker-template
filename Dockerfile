@@ -1,38 +1,19 @@
-########################
-### build
-########################
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
-
-ARG PROJECT
-
-WORKDIR /src
-
-ENV PROJECT=${PROJECT}
-
-COPY . .
-
-RUN dotnet restore "${PROJECT}.csproj"
-
-RUN dotnet publish "${PROJECT}.csproj" --configuration Release --no-restore --output /app
-
-########################
-### final
-########################
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 
-
-ARG PROJECT
-
+FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
 WORKDIR /app
+EXPOSE 80
+EXPOSE 443
 
-ENV ASPNETCORE_URLS "http://*:4000"
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+WORKDIR /src
+COPY ["YourUmbracoProject.csproj", "."]
+RUN dotnet restore "YourUmbracoProject.csproj"
+COPY . .
+RUN dotnet build "YourUmbracoProject.csproj" -c Release -o /app/build
 
-ENV DLL="${PROJECT}.dll"
+FROM build AS publish
+RUN dotnet publish "YourUmbracoProject.csproj" -c Release -o /app/publish
 
-COPY --from=build /app .
-
-RUN echo "#!/bin/sh\ndotnet ${DLL}" > ./entrypoint.sh
-RUN chmod +x ./entrypoint.sh
-
-EXPOSE 4000
-
-ENTRYPOINT ["./entrypoint.sh"]
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "YourUmbracoProject.dll"]
